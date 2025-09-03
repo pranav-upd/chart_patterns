@@ -1,5 +1,3 @@
-
-
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi import FastAPI, HTTPException, Depends
 from sqlalchemy.orm import Session
@@ -19,6 +17,7 @@ from algo_scripts.algotrade.scripts.trading_style.intraday.core.intra_utils.db.m
 from algo_scripts.algotrade.scripts.trading_style.intraday.core.intra_utils.db.management.database_manager import (
     get_db_session, initialize_global_session, cleanup,close_global_session
 )
+from get_eod_chart_patterns import get_eod_chart_patterns
 
 
 import os
@@ -29,13 +28,13 @@ import json
 
 
 """
-Fyers	
-Stock  - NSE:SBIN-EQ	
-Future - NSE:RELIANCE25MARFUT	
-Option Weekly - NSE:NIFTYYYMDD19000CE	 Example  NSE:NIFTY2521323500PE	
-Option Monthly - NSE:NIFTY25FEB23500CE	
-Commodity -  MCX:CRUDEOIL24MARFUT	
-Currency - NSE:USDINR24MARFUT	
+Fyers
+Stock  - NSE:SBIN-EQ
+Future - NSE:RELIANCE25MARFUT
+Option Weekly - NSE:NIFTYYYMDD19000CE	 Example  NSE:NIFTY2521323500PE
+Option Monthly - NSE:NIFTY25FEB23500CE
+Commodity -  MCX:CRUDEOIL24MARFUT
+Currency - NSE:USDINR24MARFUT
 
 https://algotradingbridge.in/support/broker-master-script-symbol-instrument-contract-list/
 
@@ -200,8 +199,20 @@ async def check_valid_token():
     return response
 
 
+@app.get("/run_eod_scraper/v1/")
+async def run_eod_scraper(db: Session = Depends(get_db_session)):
+    logger_name = "run_eod_scraper"
+    logger = get_trade_actions_dynamic_logger(logger_name)
+    try:
+        logger.info("Starting EOD chart patterns scraper.")
+        get_eod_chart_patterns(db)
+        logger.info("EOD chart patterns scraper run successfully.")
+        return {"status": "Success", "message": "EOD chart patterns scraper run successfully."}
+    except Exception as e:
+        logger.error(f"Failed to run EOD chart patterns scraper: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Failed to run EOD chart patterns scraper: {str(e)}")
+
 
 @app.get("/signal_data_loader/health")
 def health_check():
     return {"status": "Signal_Data_Loader healthy"}
-
